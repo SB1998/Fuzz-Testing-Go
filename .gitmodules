@@ -7,3 +7,12 @@
 [submodule "Seminar"]
 	path = Seminar
 	url = https://github.com/sulzmann/Seminar
+[submodule "examples/dice"]
+	path = examples/dice
+	url = https://github.com/dsinecos/go-misc-patterns
+[submodule "examples/book"]
+	path = examples/book
+	url = https://github.com/MrDKOz/golang-concurrency
+[submodule "examples/grpc"]
+	path = examples/grpc
+	url = https://github.com/grpc/grpc-go.git
