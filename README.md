@@ -17,8 +17,8 @@ Professor Martin Sulzmann<br>
 
 - [General Information](#general-information)
 - [Environment Setup](#environment-setup)
-- [Running test.sh](#running-test-sh)
-- [Extending test.sh](#extending-test-sh)
+- [Running test.sh](#running-testsh)
+- [Extending test.sh](#extending-testsh)
 
 ---
 
