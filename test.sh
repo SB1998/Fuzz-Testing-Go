@@ -2,7 +2,7 @@
 
 # defaults
 EXAMPLE_NUMBER=
-AVAILABLE=("hello" "as1" "book" "dice" "grpc")
+AVAILABLE=("hello" "as1" "book" "dice" "grpc" "dockerbug" "as2")
 GFUZZ_DIR=./GFuzz
 WORKDIR=./workspace
 EXAMPLEDIR="./examples"
@@ -31,6 +31,7 @@ function showHelp() {
 function showExamples() {
     echo "Available Examples to run:"
     echo ""
+    echo "dockerbug: Docker-Example of GFuzz Team in their paper (adapted as easy example)"
     echo "hello: Hello-Example of GFuzz Team"
     echo "as1: Eating Philosophers of AutonomeSysteme"
     echo "dice: Code from https://github.com/dsinecos/go-misc-patterns"
@@ -71,7 +72,7 @@ function runTest() {
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER":/fuzz/target \
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER-output":/fuzz/output \
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER-pkgmod":/go/pkg/mod \
-    gfuzz:latest true /fuzz/target /fuzz/output NoOracle $@ && exit 0
+    gfuzz:latest true /fuzz/target /fuzz/output $@ && exit 0
     
     
     

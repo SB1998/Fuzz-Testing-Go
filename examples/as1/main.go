@@ -7,6 +7,9 @@ import (
 
 func philo1(id int, forks chan int) {
 
+	// adaption to have an aim -> eat 3 times
+	//for i := 0; i < 3; i++ {
+
 	for {
 		<-forks
 		<-forks
@@ -22,6 +25,8 @@ func philo1(id int, forks chan int) {
 }
 
 func philo2(id int, forks chan int) {
+	// adaption to have an aim -> eat 3 times
+	//for i := 0; i < 3; i++ {
 	for {
 		<-forks
 		select {
@@ -40,6 +45,8 @@ func philo2(id int, forks chan int) {
 }
 
 func philo3(id int, forks chan int) {
+	// adaption to have an aim -> eat 3 times
+	//for i := 0; i < 3; i++ {
 	for {
 		<-forks
 		select {
