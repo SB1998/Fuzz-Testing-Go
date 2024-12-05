@@ -2,7 +2,7 @@
 
 # defaults
 EXAMPLE_NUMBER=
-AVAILABLE=("hello" "as1" "book" "dice" "grpc" "dockerbug" "as2")
+AVAILABLE=("hello" "as1" "book" "dice" "grpc" "dockerbug" "dockerbug2" "dockerbug3" "dockerbug4")
 GFUZZ_DIR=./GFuzz
 WORKDIR=./workspace
 EXAMPLEDIR="./examples"
@@ -22,7 +22,7 @@ function showHelp() {
     echo "usage: test.sh [-cmd <CMD-PARAMETER>]"
     echo ""
     echo "cmd:"
-    echo "    -example <name> : number/name of example, defaults to $EXAMPLE_NUMBER"
+    echo "    -example <name> : name of example, defaults to $EXAMPLE_NUMBER"
     echo "    -list : list available examples"
     echo ""
 }
@@ -31,7 +31,9 @@ function showHelp() {
 function showExamples() {
     echo "Available Examples to run:"
     echo ""
-    echo "dockerbug: Docker-Example of GFuzz Team in their paper (adapted as easy example)"
+    echo "dockerbug: Docker-Example of GFuzz Team in their paper (adapted as easy example, timeout 1s)"
+    echo "dockerbug2: Docker-Example of GFuzz Team in their paper (adapted as easy example, timeout 40s)"
+    echo "dockerbug3: Docker-Example of GFuzz Team in their paper (adapted as easy example, timeout 1ns)"
     echo "hello: Hello-Example of GFuzz Team"
     echo "as1: Eating Philosophers of AutonomeSysteme"
     echo "dice: Code from https://github.com/dsinecos/go-misc-patterns"
@@ -72,7 +74,15 @@ function runTest() {
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER":/fuzz/target \
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER-output":/fuzz/output \
     -v "$WORKDIR/$date-$EXAMPLE_NUMBER-pkgmod":/go/pkg/mod \
-    gfuzz:latest true /fuzz/target /fuzz/output $@ && exit 0
+    gfuzz:latest true /fuzz/target /fuzz/output
+    
+    ## workout how to show analyze nicely
+    # &  docker run --rm -it \
+    # -v "$WORKDIR/$date-$EXAMPLE_NUMBER":/fuzz/target \
+    # -v "$WORKDIR/$date-$EXAMPLE_NUMBER-output":/fuzz/output \
+    # -v "$WORKDIR/$date-$EXAMPLE_NUMBER-pkgmod":/go/pkg/mod \
+    # --entrypoint /bin/bash gfuzz:latest -c "echo '!!!!!!!! TEST!' && sleep 1000 && echo '!!!!! TEST2'"
+    #gfuzz:latest true /fuzz/target /fuzz/output
     
     
     
@@ -112,22 +122,6 @@ do
         exit 0
     fi
 done
+
+# if not ask the user to select one
 selectExample
-
-
-# echo "1: "
-
-
-# GOMOD_DIR=$1
-# OUT_DIR=$2
-# shift 2
-
-
-
-# docker build -f docker/fuzzer/Dockerfile -t gfuzz:latest .
-
-# docker run --rm -it \
-# -v $GOMOD_DIR:/fuzz/target \
-# -v $OUT_DIR:/fuzz/output \
-# -v $(pwd)/tmp/pkgmod:/go/pkg/mod \
-# gfuzz:latest true /fuzz/target /fuzz/output $@

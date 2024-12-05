@@ -1,9 +1,6 @@
 [submodule "GFuzz"]
 	path = GFuzz
 	url = https://github.com/system-pclub/GFuzz.git
-[submodule "AutonomeSysteme"]
-	path = AutonomeSysteme
-	url = https://github.com/sulzmann/AutonomeSysteme.git
 [submodule "Seminar"]
 	path = Seminar
 	url = https://github.com/sulzmann/Seminar

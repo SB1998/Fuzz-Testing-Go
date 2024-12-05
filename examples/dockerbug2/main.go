@@ -88,7 +88,7 @@ var daemon = Daemon{}
 func parent() { // parent goroutine
 	ch, errCh := daemon.Watch()
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(40 * time.Second):
 		fmt.Printf("Timeout!")
 	case e := <-ch:
 		fmt.Printf("Received %+v", e)
@@ -101,7 +101,7 @@ func parent() { // parent goroutine
 func parentFixed() { // parent goroutine
 	ch, errCh := daemon.WatchFixed()
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(40 * time.Second):
 		fmt.Printf("Timeout!")
 	case e := <-ch:
 		fmt.Printf("Received %+v", e)

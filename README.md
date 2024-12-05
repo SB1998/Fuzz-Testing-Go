@@ -20,7 +20,7 @@ Professor Martin Sulzmann<br>
 - [About GFuzz](#about-gfuzz)
   - [Patch of GoLang](#patch-of-golang)
   - [Changes in SourceCode](#changes-in-sourcecode)
-  - [Example findig a bug](#example-finding-a-bug)
+  - [Example finding a bug](#example-finding-a-bug)
 - [Running test.sh](#running-testsh)
 - [Extending test.sh](#extending-testsh)
 - [Comparison to go-fuzz](#comparison-to-go-fuzz)
@@ -38,13 +38,17 @@ In this project some additional example-projects (not only the ones provided by 
 
 1. To run the examples you need to have docker installed (please google to find out how to depending on your OS).<br>
 
-2. To be able to run the examples, please make sure you clone this repo with `git clone –recursive https://github.com/SB1998/Fuzz-Testing-Go` or to make sure to manually clone the examples using the urls provided in the submodules file.<br>
+2. Make sure you clone the GFuzz Source (either with `git clone –recursive https://github.com/SB1998/Fuzz-Testing-Go` or manually clone it into the **GFuzz** Folder)
 
-3. Some examples might not include the relevant test files. They can be found in the folder **examples/additional_files**, please copy the **\<example\>\_<name_of_test>.go** to the correct example folder and remove the \<example\>\_.<br>
+3. To run the [analyze.py](analyze.py) (this is a copy of the script by the GFuzz Developers) make sure you have python3 and the **matplotlib** module installed (here you can simply use `pip install matplotlib`)
+
+4. To be able to run the examples, please make sure you clone this repo with `git clone –recursive https://github.com/SB1998/Fuzz-Testing-Go` or to make sure to manually clone the examples using the urls provided in the submodules file.<br>
+
+5. Some examples might not include the relevant test files. They can be found in the folder **examples/additional_files**, please copy the **\<example\>\_<name_of_test>.go** to the correct example folder and remove the \<example\>\_.<br>
    (eg: dice_main_test.go should be copied to examples/dice/main_test.go)<br>
    These examples can be easily run with the bash script by calling `./test.sh`. You can also provide parameters (more is explained in the following chapters).<br>
 
-4. If you write your own code and want to test it with GFuzz, you can use asdf as package manager to easily install golang (have a look here: https://asdf-vm.com/). More about running your own code will also be explained in the next chapters.
+6. If you write your own code and want to test it with GFuzz, you can use asdf as package manager to easily install golang and python (have a look here: https://asdf-vm.com/). More about running your own code will also be explained in the next chapters.
 
 ## About GFuzz
 
@@ -155,16 +159,23 @@ func TestChannelBug(t *testing.T) {
 As you see:
 
 - **oraclert.** notations like **ch := oraclert.StoreChMakeInfo(make(chan int), 1).(chan int)** or **oraclert.StoreOpInfo("Send", 2)** are to notify/save changes to the channel or channel state or operations
-- **switch oraclert.GetSelEfcmSwitchCaseIdx("/fuzz/target/hello_test.go", "17", 2) {...}** is for handling the message reordering inside the select
+- **switch oraclert.GetSelEfcmSwitchCaseIdx("/fuzz/target/hello_test.go", "17", 2) {...}** is for handling the message reordering inside the select <br>
 
-(TODO: config options of oraclert are in ort_config, like {"selefcm":{"sel_timeout":0,"efcms":null},"dump_selects":true} -> find out more about them, log says there are `Ortconfig: Repeat:1 OutputDir:/fuzz/output Parallel:5 InstStats: Version:false GlobalTuple:false ScoreSdk:false ScoreAllPrim:false TimeDivideBy:0 OracleRtDebug:false SelEfcmTimeout:500 FixedSelEfcmTimeout:false ScoreBasedEnergy:false AllowDupCfg:false IsIgnoreFeedback:false RandMutateEnergy:0 IsDisableScore:false NoSelEfcm:false NoOracle:false NfbRandEnergy:false NfbRandSelEfcmTimeout:false MemRandStrat:false}` )
+You can set some settings, which will influence the behavior such as **SelEfcmTimeout**.<br>
+This is explained in [Extending test.sh](#extending-testsh)
 
 ### Example finding a bug
 
+#### About Example and Running it
+
 An example provided by the Team of GFuzz is a bug in docker.
 The adapted/stubbed version can be easily executed with `./test.sh -example dockerbug` (please refer to [Running test.sh](#running-testsh) for more information about the directories, ...).<br>
+Also included are `./test.sh -example dockerbug2` and `./test.sh -example dockerbug3`, which simply change the timeout for the select case
 
-The stubbed example looks like (for the full source please have a look in [/examples/dockerbug/](/examples/dockerbug/) in the __main.go__ and __main_test.go__):
+#### SourceCode and the Problem
+
+The stubbed example looks like (for the full source please have a look in [/examples/dockerbug/](/examples/dockerbug/) in the **main.go** and **main_test.go** and the corresponding folders for dockerbug2 and dockerbug3):
+
 ```
 type Entry struct {...}
 type Daemon struct{}
@@ -187,7 +198,7 @@ func parent() { // parent goroutine
 
 func parentFixed() { // parent goroutine
 	ch, errCh := WatchFixed()
-	// ... as parent 
+	// ... as parent
 }
 
 func (d *Daemon) Watch() (chan Entry, chan error) {
@@ -221,28 +232,31 @@ func fetch(id int) (Entry, error) {
 }
 
 ```
+
 <br>
 In short:
 
 - Watch():
-    - creates 2 unbuffered channels
-    - fetches value + send to channels in child go-routine
-    - return channels
+  - creates 2 unbuffered channels
+  - fetches value + send to channels in child go-routine
+  - return channels
 - WatchFixed():
-    - does the same with buffered (size 1) channels
+  - does the same with buffered (size 1) channels
 - parent and parentFixed wait for a result (blocking with select)
 
 <br>
 The problem (if the timeout happens):
+
 - print message and return
 - Afterwards no reference to ch and errCh exist
 - no go-routines can receive messages anymore
 - Channels are unbuffered so child go-routine blocks endlessly
-<br>
+
 This problem only occurs if the timeout arrives before any other message.<br>
 This might not happen in the example with fetch() directly returning something, but it might if fetch uses another (slower) datasource.
 
-<br>
+#### Result after runnig test.sh
+
 After running the example you get a log file which includes something like the following lines:
 
 ```
@@ -266,6 +280,7 @@ TestParentFixed
 As you can see, gFuzz detects a bug and also prints at which part of the source code.
 
 If you have a look you can find more information on the specific test:
+
 ```
 [oraclert] selefcm timeout: 1500=== RUN   TestParent
 [oraclert] started
@@ -322,7 +337,129 @@ created by docker.(*Daemon).Watch
 --- PASS: TestParent (1.01s)
 PASS
 ```
-(TODO: see if there are any paramteres to optimize output of stack and channel dump)
+
+To check out where the error occures, please check out the main.go file in the **workspace** folder.<br>
+It should be at `ch := oraclert.StoreChMakeInfo(make(chan Entry), 17).(chan Entry)` after having a look.<br>
+(Why there and not at the child routine ???)
+
+#### Ananlyze
+
+If you run [analyze.py](analyze.py) you get an overview like the following (eg.: `./analyze.py --gfuzz-out-dir 2024-12-04_23-18-54-dockerbug3-output/`):
+
+For dockerbug:
+
+```
+total entries: 2
+total runs: 26
+total duration (sec): 40.0
+average (run/sec): 0.65
+
+total runs (without timeout): 20
+total duration (without timeout): 108.0
+average (run/sec): 0.19
+
+bug statistics:
+used (hours), buggy primitive location, gfuzz exec
+0.00 h,/fuzz/target/main.go:218,5-rand-docker.test-TestParent-1
+```
+
+For dockerbug2:
+
+```
+total entries: 2
+total runs: 38
+total duration (sec): 55.0
+average (run/sec): 0.69
+
+total runs (without timeout): 32
+total duration (without timeout): 208.0
+average (run/sec): 0.15
+
+bug statistics:
+used (hours), buggy primitive location, gfuzz exec
+```
+
+And for dockerbug3:
+
+```
+total entries: 2
+total runs: 26
+total duration (sec): 38.0
+average (run/sec): 0.68
+
+total runs (without timeout): 16
+total duration (without timeout): 104.0
+average (run/sec): 0.15
+
+bug statistics:
+used (hours), buggy primitive location, gfuzz exec
+0.00 h,/fuzz/target/main.go:218,1-init-docker.test-TestParent-0
+```
+
+As you can see there are many test run.<br>
+26 for dockerbug and dockerbug3 and even 38 for dockerbug2.<br>
+
+As you might have realized while looking at the output of test.sh there are some logging messages looking like this:
+`2024/12/04 22:19:00 handle 8, new rerun with timeout 4500 becuase of uncovered efcm`
+
+As it seams GFuzz is trying with different timeout values to reach some cases.
+
+One such case can be seen here:
+The output which select is tested shows like this:
+
+```
+{
+  "selefcm": {
+    "sel_timeout": 2500,
+    "efcms": [
+      {
+        "id": "/fuzz/target/main.go:90",
+        "case": 2
+      }
+    ]
+  },
+  "dump_selects": true
+}
+```
+
+corresponding to the source it is the following:
+
+```
+case 2:
+		select {
+		case e := <-errCh:
+			fmt.Printf("Error %s", e)
+		case <-oraclert.SelEfcmTimeout():
+			oraclert.
+
+				// parent goroutine
+				StoreLastMySwitchChoice(-1)
+			select {
+			case <-time.After(1 * time.Second):
+				fmt.Printf("Timeout!")
+			case e := <-ch:
+				fmt.Printf("Received %+v", e)
+			case e := <-errCh:
+				fmt.Printf("Error %s", e)
+			}
+		}
+```
+
+In this case GoFuzz waits for a message on the errCh (error channel).<br>
+If after SelEfcmTimeout, in this case 2.5 seconds, no message was received on the channel, the default code is executed.<br>
+The stubbed code should never send any message on errCh (because of the implementation of fetch(...)), so GoFuzz tries to increase the timeout. So more tests are run.
+
+### grpc (testing larger project)
+code conversion took:
+```
+real    5m55,480s
+user    0m0,311s
+sys     0m0,314s
+```
+
+for 1162 files.
+
+Test could run because of error: `/fuzz/target/go.mod:3: invalid go version '1.22.7': must match format 1.23`
 
 ## Running test.sh
 
@@ -350,13 +487,16 @@ The fuzzer.log will start with some standard information like:
 2024/11/06 22:09:21 Using score to prioritize fuzzing entries.
 2024/11/06 22:09:21 SelEfcmTimeout: 500
 2024/11/06 22:09:21 go list ./... in /fuzz/target
+
 ```
 
 Afterwards you get an overview of the tests, which will be run.
 
 ```
+
 2024/11/06 22:09:24 /fuzz/output/tbin/concurrent.test -test.list .\*
 TestMain
+
 ```
 
 Each of them is run once normally (as _go test_ would do).<br>
@@ -365,7 +505,9 @@ Afterwards GFuzz will try to run its tests with the message order modification.
 If you get something like
 
 ```
+
 2024/11/06 16:38:27 nothing to fuzz, exiting...
+
 ```
 
 then GFuzz is unable to do its magic with your test cases.<br>
@@ -374,6 +516,7 @@ Else you will get the subfolders with their respective outputs.<br>
 An output may look like this:
 
 ```
+
 [oraclert] selefcm timeout: 1500=== RUN TestDice
 [oraclert] started
 -----New Blocking Bug:
@@ -432,22 +575,37 @@ main.main()
 
 --- PASS: TestDice (1.50s)
 PASS
+
 ```
 
 As you can see here, bugs or other relevant/interesting information is added after -----.<br>
 In this example a new blocking bug and a no blocking message.<br>
 
+To easier filter the log for bugs, you can simply run the following:
+`./analyze.py --gfuzz-out-dir ./workspace/<date>-<example-id>-output/`
+
+This will give you a simple overview about the amounts of tests run, the time they took and the bugs found.
+For example:
+
+```
+total entries: 2
+total runs: 26
+total duration (sec): 40.0
+average (run/sec): 0.65
+
+total runs (without timeout): 20
+total duration (without timeout): 108.0
+average (run/sec): 0.19
+
+bug statistics:
+used (hours), buggy primitive location, gfuzz exec
+0.00 h,/fuzz/target/main.go:218,5-rand-docker.test-TestParent-1
+```
+
 ## Extending test.sh
 
-If you want to execute your own examples, you can simply add them to the example folder.<br>
-Afterwards add the folder name as a value to the AVAILABLE Array at the beginning of test.sh (you can also include a short description in the showExamples function).<br>
+1. Include the source code of your project in the examples folder (eg.: `ln -s /home/sb1998/myproject ./examples/myproject`)
+
+2. Add the folder name as a value to the AVAILABLE Array at the beginning of test.sh (you can also include a short description in the showExamples function).<br>
 
 Another way to run your own examples would be to use the provided scripts by GFuzz. Have a look in their “script” directory. If you run their scripts you should be in the GFuzz directory.<br>
-
-## Comparison to go-fuzz
-
-TODO/Work in progress: how would I find the bug explained in the docker bug example of gfuzz
-TODO race: extend to use channels, compare with each other
-TODO: compare philo (needs extension [finish condition or result channel or both])
-
-
