@@ -449,6 +449,11 @@ In this case GoFuzz waits for a message on the errCh (error channel).<br>
 If after SelEfcmTimeout, in this case 2.5 seconds, no message was received on the channel, the default code is executed.<br>
 The stubbed code should never send any message on errCh (because of the implementation of fetch(...)), so GoFuzz tries to increase the timeout. So more tests are run.
 
+You might have also seen, that the blocking bug isn't found on dockerbug2 with 40 seconds timeout.
+This is due to the maximum running time of tests within gFuzz, which is 30 seconds.<br>
+In this case we also run into efcm timeouts during waiting for the timeout case.<br>
+This is why there are more additional test. And because the default (fallback) is always selected (no message order mutation happens) the blocking bug isn't recognized.
+
 ### grpc (testing larger project)
 code conversion took:
 ```
@@ -459,7 +464,8 @@ sys     0m0,314s
 
 for 1162 files.
 
-Test could run because of error: `/fuzz/target/go.mod:3: invalid go version '1.22.7': must match format 1.23`
+Test couldn't run because of error: `/fuzz/target/go.mod:3: invalid go version '1.22.7': must match format 1.23`
+(this can be possibly fixed by checking out an older version of grpc with go 1.16 in go.mod, but you can already see the time overhead of 5min only for the preparation without running any tests containing the message order mutation).
 
 ## Running test.sh
 
