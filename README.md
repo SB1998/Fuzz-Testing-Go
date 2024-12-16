@@ -7,6 +7,8 @@ Simon Boehm<br>
 <br><br>
 under<br>
 Professor Martin Sulzmann<br>
+link to github repository: <a href="https://github.com/SB1998/Fuzz-Testing-Go">https://github.com/SB1998/Fuzz-Testing-Go</a>
+
 </p>
 
 ---
@@ -21,9 +23,9 @@ Professor Martin Sulzmann<br>
   - [Patch of GoLang](#patch-of-golang)
   - [Changes in SourceCode](#changes-in-sourcecode)
   - [Example finding a bug](#example-finding-a-bug)
+  - [grpc (testing larger project)](#grpc-testing-larger-project)
 - [Running test.sh](#running-testsh)
 - [Extending test.sh](#extending-testsh)
-- [Comparison to go-fuzz](#comparison-to-go-fuzz)
 
 ---
 
@@ -249,7 +251,7 @@ The problem (if the timeout happens):
 
 - print message and return
 - Afterwards no reference to ch and errCh exist
-- no go-routines can receive messages anymore
+- no go-routines can send messages anymore (because parent isn't waiting/receiving for any channels anymore)
 - Channels are unbuffered so child go-routine blocks endlessly
 
 This problem only occurs if the timeout arrives before any other message.<br>
@@ -342,7 +344,7 @@ To check out where the error occures, please check out the main.go file in the *
 It should be at `ch := oraclert.StoreChMakeInfo(make(chan Entry), 17).(chan Entry)` after having a look.<br>
 (Why there and not at the child routine ???)
 
-#### Ananlyze
+#### Analyze
 
 If you run [analyze.py](analyze.py) you get an overview like the following (eg.: `./analyze.py --gfuzz-out-dir 2024-12-04_23-18-54-dockerbug3-output/`):
 
